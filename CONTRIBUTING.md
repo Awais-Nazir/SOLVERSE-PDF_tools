@@ -74,7 +74,7 @@ Then:
    - Windows version (if relevant)
 
 ## 💡 Feature Requests
-- Have an idea?
+Have an idea?
  - Open an Issue
 - Describe the feature clearly
  - Explain why it would be useful
