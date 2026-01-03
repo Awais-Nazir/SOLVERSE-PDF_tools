@@ -1,5 +1,63 @@
-# SOLVERSE-PDF_tools
-Merge and Split PDFs with Ease
+# PDF Tools for Windows
 
-**Dated. 30/12-2025**
-- chore: demo commit from local host
+A lightweight Windows utility to **merge and split PDF files directly from the right-click context menu**.
+
+Built using **Python, Tkinter, PyInstaller, and Inno Setup**.
+
+---
+
+## ✨ Features
+
+- Merge two PDF files via right-click
+- Split PDF into multiple parts
+- Native Windows File Explorer integration
+- Simple and clean GUI
+- Standalone installer (no Python required)
+- Automatic cleanup on uninstall
+
+---
+
+## 📦 Installation
+
+1. Download the latest installer from the **Releases** page:
+   👉 https://github.com/<your-username>/<repo-name>/releases
+2. Run `PDF_Tools_Setup_v1.0.0.exe`
+3. Follow the setup wizard
+
+---
+
+## 🖱 How to Use
+
+### Merge PDFs
+- Select **one or two PDF files**
+- Right-click → **Merge PDFs**
+- Choose output location
+
+### Split PDF
+- Right-click a PDF
+- Select **Split PDF**
+- Choose pages per split
+
+---
+
+## 🗑 Uninstall
+
+- Go to **Apps & Features**
+- Uninstall **PDF Tools**
+- Context menu entries are removed automatically
+
+---
+
+## 🛠 Tech Stack
+
+- Python
+- Tkinter
+- PyPDF2
+- PyInstaller
+- Inno Setup
+
+---
+
+## 📄 License
+
+MIT License

@@ -1,14 +1,20 @@
 [Setup]
 AppName=PDF Tools
-AppVersion=1.0
+AppVersion=1.0.0
+AppVerName=PDF Tools v1.0.0
+
+VersionInfoVersion=1.0.0.0
+VersionInfoCompany=Muhammad Awais Nazir
+VersionInfoDescription=PDF Merge & Split Tools for Windows
+VersionInfoCopyright=© 2025 Muhammad Awais Nazir
+
 DefaultDirName={pf}\PDF Tools
 DefaultGroupName=PDF Tools
 UninstallDisplayIcon={app}\merge_pdfs.exe
 OutputDir=.
-OutputBaseFilename=PDF_Tools_Setup
-Compression=lzma
-SolidCompression=yes
+OutputBaseFilename=PDF_Tools_Setup_v1.0.0
 WizardStyle=modern
+
 
 [Files]
 Source: "merge_pdfs.exe"; DestDir: "{app}"; Flags: ignoreversion
