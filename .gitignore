@@ -71,6 +71,8 @@ htmlcov/
 .pyre/
 SOLVERSE.rar
 SOLVERSE/*
-
+Assets/*
+*.bmp
+*.ico
 
 *.exe
