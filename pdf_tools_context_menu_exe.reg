@@ -1,0 +1,21 @@
+Windows Registry Editor Version 5.00
+
+; =========================
+; Merge PDFs
+; =========================
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\MergePDFs]
+@="Merge PDFs"
+"Icon"="C:\\PDF_Tools\\logo.ico"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\MergePDFs\command]
+@="\"C:\\PDF_Tools\\merge_pdfs.exe\" \"%1\" \"%2\""
+
+; =========================
+; Split PDF
+; =========================
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\SplitPDF]
+@="Split PDF"
+"Icon"="C:\\PDF_Tools\\logo.ico"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\SplitPDF\command]
+@="\"C:\\PDF_Tools\\split_pdf.exe\" \"%1\""
