@@ -20,7 +20,7 @@ Built using **Python, Tkinter, PyInstaller, and Inno Setup**.
 ## 📦 Installation
 
 1. Download the latest installer from the **Releases** page:
-   👉 https://github.com/<your-username>/<repo-name>/releases
+   👉 [PDF Tools v1.0.0](https://github.com/Awais-Nazir/SOLVERSE-PDF_tools/releases/tag/v1.0.0)
 2. Run `PDF_Tools_Setup_v1.0.0.exe`
 3. Follow the setup wizard
 
