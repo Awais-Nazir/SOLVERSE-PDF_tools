@@ -27,90 +27,68 @@ The project is built using:
 - Click the **Fork** button on GitHub
 - Clone your fork locally
 
-```bash
-git clone https://github.com/your-username/pdf-tools-windows.git
-2️⃣ Create a New Branch
+       git clone https://github.com/Awais-Nazir/SOLVERSE-PDF_tools.git
+
+### 2️⃣ Create a New Branch
 Please create a separate branch for your changes:
 
-bash
-Copy code
-git checkout -b feature/your-feature-name
+    git checkout -b feature/your-feature-name
+
 Examples:
 
-feature/multi-pdf-merge
+- feature/multi-pdf-merge
+- fix/context-menu-bug
+- docs/update-readme
 
-fix/context-menu-bug
+### 3️⃣ Make Your Changes
 
-docs/update-readme
+ - Keep changes focused and minimal
+ - Follow the existing code style
+  - Test your changes locally before committing
 
-3️⃣ Make Your Changes
-Keep changes focused and minimal
-
-Follow the existing code style
-
-Test your changes locally before committing
-
-4️⃣ Commit Guidelines
+### 4️⃣ Commit Guidelines
 Write clear and meaningful commit messages:
 
-bash
-Copy code
-git commit -m "Add auto-rename support for split PDFs"
-5️⃣ Push & Create a Pull Request
-bash
-Copy code
-git push origin feature/your-feature-name
+
+    git commit -m "Add auto-rename support for split PDFs"
+
+### 5️⃣ Push & Create a Pull Request
+
+    git push origin feature/your-feature-name
+
 Then:
 
-Open a Pull Request (PR) on GitHub
+- Open a Pull Request (PR) on GitHub
+- Clearly describe:
+- What you changed
+- Why the change is needed
+- Any relevant screenshots (if UI-related)
 
-Clearly describe:
+## 🐞 Reporting Bugs
+- If you find a bug:
+  - Check existing Issues to avoid duplicates
+  - Open a new Issue with:
+  - Clear title
+  - Steps to reproduce
+   - Expected vs actual behavior
+   - Windows version (if relevant)
 
-What you changed
+## 💡 Feature Requests
+- Have an idea?
+ - Open an Issue
+- Describe the feature clearly
+ - Explain why it would be useful
+- All ideas are welcome, even small ones.
 
-Why the change is needed
-
-Any relevant screenshots (if UI-related)
-
-🐞 Reporting Bugs
-If you find a bug:
-
-Check existing Issues to avoid duplicates
-
-Open a new Issue with:
-
-Clear title
-
-Steps to reproduce
-
-Expected vs actual behavior
-
-Windows version (if relevant)
-
-💡 Feature Requests
-Have an idea?
-
-Open an Issue
-
-Describe the feature clearly
-
-Explain why it would be useful
-
-All ideas are welcome, even small ones.
-
-🧪 Testing
+## 🧪 Testing
 Before submitting a PR, please ensure:
+- The application runs without errors
+- PDF merge and split functions work correctly
+- Context menu integration remains intact
+- Installer still installs and uninstalls cleanly
 
-The application runs without errors
-
-PDF merge and split functions work correctly
-
-Context menu integration remains intact
-
-Installer still installs and uninstalls cleanly
-
-📄 License
+## 📄 License
 By contributing, you agree that your contributions will be licensed under the MIT License.
 
-🙌 Thank You
+**🙌 Thank You**
 Thank you for taking the time to contribute!
