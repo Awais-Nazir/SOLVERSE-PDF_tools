@@ -3,7 +3,35 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PyPDF2 import PdfMerger
+import logging
+from datetime import datetime
 
+def setup_logger(app_name):
+    log_dir = os.path.join(
+        os.getenv("LOCALAPPDATA", os.getcwd()),
+        "PDFTools",
+        "logs"
+    )
+    os.makedirs(log_dir, exist_ok=True)
+
+    log_file = os.path.join(
+        log_dir,
+        f"{app_name}_{datetime.now().strftime('%Y-%m-%d')}.log"
+    )
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+        handlers=[
+            logging.FileHandler(log_file, encoding="utf-8"),
+        ]
+    )
+
+    logging.info("========== Application Started ==========")
+    logging.info(f"Executable Path: {sys.executable}")
+    return log_file
+
+LOG_FILE = setup_logger("merge_pdfs")
 
 class PDFMergerApp:
     def __init__(self, root, initial_files=None):
@@ -24,11 +52,17 @@ class PDFMergerApp:
 
         self.create_ui()
         self.update_labels()
+        # def safe_exit(self, event=None):
+        # def safe_exit(self, event=None):
+        #     logging.info("Application closed by user.")
+        #     self.root.destroy()
 
-        self.root.bind("<Escape>", lambda e: self.root.destroy())
+        # self.root.bind("<Escape>", safe_exit)
+        # root.protocol("WM_DELETE_WINDOW", safe_exit)
         # Auto-merge if two PDFs are passed from context menu
         if self.pdf1 and self.pdf2:
             self.root.after(300, self.merge_pdfs)
+
 
 
     def create_ui(self):
@@ -112,6 +146,7 @@ class PDFMergerApp:
         output_path = self.get_unique_filename(path)
 
         try:
+            logging.info(f"Merging PDFs:\n  1: {self.pdf1}\n  2: {self.pdf2}\n  Output: {output_path}")
             merger = PdfMerger()
             merger.append(self.pdf1)
             merger.append(self.pdf2)
@@ -121,18 +156,29 @@ class PDFMergerApp:
 
             merger.close()
 
+            logging.info("Merge completed successfully.")
+
             messagebox.showinfo("Success", "PDFs merged successfully!")
             self.root.destroy()  # ✅ close app after success
 
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to merge PDFs:\n{e}")
-
+            logging.error(f"Error during merging: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to merge PDFs:\n{e}, A log file has been created at:\n{LOG_FILE}")
+            self.root.destroy()  # close app on error as well
 
 def main():
     initial_files = [arg for arg in sys.argv[1:] if arg.lower().endswith(".pdf")]
     initial_files = initial_files[:2]
-
+    if len(sys.argv) >= 3:
+        logging.info("Auto Mode Detected (context menu)")
     root = tk.Tk()
+    
+    def safe_exit(event=None):
+        logging.info("Application closed by user")
+        root.destroy()
+    root.bind("<Escape>", safe_exit)
+    root.protocol("WM_DELETE_WINDOW", safe_exit)
+    
     app = PDFMergerApp(root, initial_files)
     root.mainloop()
 
