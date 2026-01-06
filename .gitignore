@@ -76,3 +76,9 @@ Assets/*
 *.ico
 
 *.exe
+
+Extra/*
+
+Production/*
+
+Installer-Files/*
