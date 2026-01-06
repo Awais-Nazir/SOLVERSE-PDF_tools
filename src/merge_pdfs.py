@@ -2,9 +2,10 @@ import sys
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger 
 import logging
 from datetime import datetime
+from version import VERSION
 
 def setup_logger(app_name):
     log_dir = os.path.join(
@@ -26,7 +27,7 @@ def setup_logger(app_name):
             logging.FileHandler(log_file, encoding="utf-8"),
         ]
     )
-
+    logging.info(f"Application version: {VERSION}")
     logging.info("========== Application Started ==========")
     logging.info(f"Executable Path: {sys.executable}")
     return log_file
