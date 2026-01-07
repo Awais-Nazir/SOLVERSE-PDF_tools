@@ -60,4 +60,4 @@ Built using **Python, Tkinter, PyInstaller, and Inno Setup**.
 
 ## 📄 License
 
-MIT License
+[MIT License](LICENSE)
