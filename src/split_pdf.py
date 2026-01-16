@@ -1,12 +1,15 @@
 import sys
 import os
+import threading
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 from PyPDF2 import PdfReader, PdfWriter
 import logging
 from datetime import datetime
 from version import VERSION
 
+
+# ================= LOGGER =================
 
 def setup_logger(app_name):
     log_dir = os.path.join(
@@ -24,10 +27,9 @@ def setup_logger(app_name):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
-        handlers=[
-            logging.FileHandler(log_file, encoding="utf-8"),
-        ]
+        handlers=[logging.FileHandler(log_file, encoding="utf-8")]
     )
+
     logging.info(f"Application version: {VERSION}")
     logging.info("========== Application Started ==========")
     logging.info(f"Executable Path: {sys.executable}")
@@ -36,15 +38,14 @@ def setup_logger(app_name):
 
 LOG_FILE = setup_logger("split_pdf")
 
-class PDFSplitterApp:
-    def safe_exit(self):
-        logging.info("Application closed by user.")
-        self.root.destroy()
 
+# ================= APP =================
+
+class PDFSplitterApp:
     def __init__(self, root, initial_file=None):
         self.root = root
-        self.root.title("Split PDF with Python")
-        self.root.geometry("400x180")
+        self.root.title(f"Split PDF v{VERSION}")
+        self.root.geometry("420x240")
         self.root.resizable(False, False)
 
         self.pdf_path = initial_file
@@ -52,9 +53,7 @@ class PDFSplitterApp:
         self.create_ui()
         self.update_label()
 
-        # # ESC to close
-        # self.root.bind("<Escape>", safe_exit)
-        # root.protocol("WM_DELETE_WINDOW", safe_exit)
+    # ============== UI ==============
 
     def create_ui(self):
         frame = tk.Frame(self.root, padx=20, pady=20)
@@ -72,8 +71,21 @@ class PDFSplitterApp:
         self.pages_entry.grid(row=2, column=1, sticky="w")
         self.pages_entry.insert(0, "1")
 
-        tk.Button(frame, text="Split PDF", command=self.split_pdf, width=15)\
-            .grid(row=3, column=1, pady=15, sticky="w")
+        self.split_button = tk.Button(frame, text="Split PDF", width=15, command=self.start_split)
+        self.split_button.grid(row=3, column=1, pady=10, sticky="w")
+
+        self.status_label = ttk.Label(frame, text="Ready")
+        self.status_label.grid(row=4, column=1, pady=5)
+
+        self.progress = ttk.Progressbar(
+            frame,
+            orient="horizontal",
+            length=260,
+            mode="indeterminate"
+        )
+        self.progress.grid(row=5, column=1, pady=5)
+
+    # ============== HELPERS ==============
 
     def update_label(self):
         self.pdf_label.config(
@@ -89,7 +101,6 @@ class PDFSplitterApp:
     def get_unique_filename(self, path):
         if not os.path.exists(path):
             return path
-
         base, ext = os.path.splitext(path)
         counter = 1
         while True:
@@ -98,8 +109,9 @@ class PDFSplitterApp:
                 return new_path
             counter += 1
 
+    # ============== SPLIT LOGIC ==============
 
-    def split_pdf(self):
+    def start_split(self):
         if not self.pdf_path:
             messagebox.showerror("Error", "Please select a PDF file.")
             return
@@ -112,8 +124,23 @@ class PDFSplitterApp:
             messagebox.showerror("Error", "Pages per split must be a positive number.")
             return
 
+        self.split_button.config(state="disabled")
+        self.status_label.config(text="Splitting PDF...")
+        self.progress.start(10)
+
+        threading.Thread(
+            target=self.split_worker,
+            args=(pages_per_split,),
+            daemon=True
+        ).start()
+
+    def split_worker(self, pages_per_split):
         try:
-            logging.info(f"Starting split for: {self.pdf_path} with {pages_per_split} pages per split")
+            logging.info(
+                f"Starting split for: {self.pdf_path} "
+                f"({pages_per_split} pages per split)"
+            )
+
             reader = PdfReader(self.pdf_path)
             total_pages = len(reader.pages)
 
@@ -133,19 +160,34 @@ class PDFSplitterApp:
                 with open(output_path, "wb") as f:
                     writer.write(f)
 
-
                 split_count += 1
+
             logging.info(f"Successfully split PDF into {split_count - 1} files.")
-            messagebox.showinfo(
-                "Success",
-                f"PDF split successfully into {split_count - 1} files."
-            )
-            self.root.destroy()  # auto-close after success
+            self.root.after(0, lambda: self.split_success(split_count - 1))
 
-        except Exception as e:
-            logging.error(f"Error during splitting: {e}", exc_info=True)
-            messagebox.showerror("Error", f"Failed to split PDF:\n{e}, A log file has been created at:\n{LOG_FILE}")
+        except Exception:
+            logging.exception("Split failed")
+            self.root.after(0, self.split_failed)
 
+    # ============== CALLBACKS ==============
+
+    def split_success(self, count):
+        self.progress.stop()
+        self.status_label.config(text="Split completed")
+        messagebox.showinfo("Success", f"PDF split successfully into {count} files.")
+        self.root.destroy()
+
+    def split_failed(self):
+        self.progress.stop()
+        self.status_label.config(text="Split failed")
+        messagebox.showerror(
+            "Error",
+            f"Failed to split PDF.\n\nA log file has been created:\n{LOG_FILE}"
+        )
+        self.root.destroy()
+
+
+# ================= MAIN =================
 
 def main():
     initial_file = None
@@ -159,9 +201,11 @@ def main():
     def safe_exit(event=None):
         logging.info("Application closed by user")
         root.destroy()
+
     root.bind("<Escape>", safe_exit)
     root.protocol("WM_DELETE_WINDOW", safe_exit)
-    app = PDFSplitterApp(root, initial_file)
+
+    PDFSplitterApp(root, initial_file)
     root.mainloop()
 
 

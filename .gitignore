@@ -71,15 +71,18 @@ htmlcov/
 .pyre/
 SOLVERSE.rar
 SOLVERSE/*
+SOLVERSE/ 
 Assets/*
 *.bmp
 *.ico
 
 *.exe
-
-Extra/*
-
+*.spec
+/Extra/*
+Extra/
 Production/*
 
-Installer-Files/*
-Test-Files/*
+/Installer-Files/*
+Installer-Files/
+/Test-Files/*
+Test-Files/
