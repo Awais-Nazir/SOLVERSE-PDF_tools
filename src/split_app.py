@@ -3,7 +3,6 @@ import os
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from PyPDF2 import PdfReader, PdfWriter
 import logging
 from datetime import datetime
 from version import VERSION
@@ -81,9 +80,11 @@ class PDFSplitterApp:
             frame,
             orient="horizontal",
             length=260,
-            mode="indeterminate"
+            mode="determinate",
+            maximum=100
         )
         self.progress.grid(row=5, column=1, pady=5)
+        self.progress['value'] = 0
 
     # ============== HELPERS ==============
 
@@ -126,7 +127,7 @@ class PDFSplitterApp:
 
         self.split_button.config(state="disabled")
         self.status_label.config(text="Splitting PDF...")
-        self.progress.start(10)
+        self.progress['value'] = 5  # Start progress at 5%
 
         threading.Thread(
             target=self.split_worker,
@@ -136,10 +137,19 @@ class PDFSplitterApp:
 
     def split_worker(self, pages_per_split):
         try:
+            # Lazy imports (heavy)
+            from PyPDF2 import PdfReader, PdfWriter
+
             logging.info(
                 f"Starting split for: {self.pdf_path} "
                 f"({pages_per_split} pages per split)"
             )
+
+            # ---- Stage 1: Reading PDF (10%) ----
+            self.root.after(0, lambda: (
+                self.status_label.config(text="Reading PDF..."),
+                self.progress.config(value=10)
+            ))
 
             reader = PdfReader(self.pdf_path)
             total_pages = len(reader.pages)
@@ -147,43 +157,53 @@ class PDFSplitterApp:
             base_name = os.path.splitext(os.path.basename(self.pdf_path))[0]
             folder = os.path.dirname(self.pdf_path)
 
-            split_count = 1
-            for start in range(0, total_pages, pages_per_split):
+            processed_pages = 0
+
+            # ---- Stage 2: Splitting Pages (10% → 90%) ----
+            for split_index, start in enumerate(range(0, total_pages, pages_per_split), start=1):
                 writer = PdfWriter()
+
                 for page_num in range(start, min(start + pages_per_split, total_pages)):
                     writer.add_page(reader.pages[page_num])
+                    processed_pages += 1
 
-                output_name = f"{base_name}_split_{split_count}.pdf"
+                    progress = 10 + int((processed_pages / total_pages) * 80)
+                    self.root.after(
+                        0,
+                        lambda p=progress: self.progress.config(value=p)
+                    )
+
+                output_name = f"{base_name}_split_{split_index}.pdf"
                 raw_output_path = os.path.join(folder, output_name)
                 output_path = self.get_unique_filename(raw_output_path)
 
                 with open(output_path, "wb") as f:
                     writer.write(f)
 
-                split_count += 1
+            logging.info(f"Successfully split PDF into {split_index} files.")
 
-            logging.info(f"Successfully split PDF into {split_count - 1} files.")
-            self.root.after(0, lambda: self.split_success(split_count - 1))
+            # ---- Stage 3: Finalizing (100%) ----
+            self.root.after(0, lambda: self.split_success(split_index))
 
         except Exception:
             logging.exception("Split failed")
             self.root.after(0, self.split_failed)
 
-    # ============== CALLBACKS ==============
+        # ============== CALLBACKS ==============
 
     def split_success(self, count):
-        self.progress.stop()
+        self.progress['value'] = 100
         self.status_label.config(text="Split completed")
         messagebox.showinfo("Success", f"PDF split successfully into {count} files.")
         self.root.destroy()
 
     def split_failed(self):
-        self.progress.stop()
+        self.progress['value'] = 0
         self.status_label.config(text="Split failed")
         messagebox.showerror(
             "Error",
             f"Failed to split PDF.\n\nA log file has been created:\n{LOG_FILE}"
-        )
+            )
         self.root.destroy()
 
 

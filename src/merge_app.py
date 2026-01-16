@@ -3,7 +3,7 @@ import os
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from PyPDF2 import PdfMerger
+
 import logging
 from datetime import datetime
 from version import VERSION
@@ -35,7 +35,7 @@ def setup_logger(app_name):
     return log_file
 
 
-LOG_FILE = setup_logger("merge_pdfs")
+LOG_FILE = setup_logger("merge_app")
 
 # ================= APP =================
 
@@ -95,7 +95,8 @@ class PDFMergerApp:
             frame,
             orient="horizontal",
             length=300,
-            mode="indeterminate"
+            mode="determinate",
+            maximum=100
         )
         self.progress.grid(row=7, column=1, pady=5)
 
@@ -166,15 +167,40 @@ class PDFMergerApp:
 
     def merge_worker(self, output_path):
         try:
-            logging.info(f"Merging:\n1: {self.pdf1}\n2: {self.pdf2}\nOutput: {output_path}")
+            # Lazy import (heavy)
+            from PyPDF2 import PdfMerger
+
+            logging.info(
+                f"Merging:\n1: {self.pdf1}\n2: {self.pdf2}\nOutput: {output_path}"
+            )
 
             merger = PdfMerger()
+
+            # ---- Stage 1: First PDF (30%) ----
+            self.root.after(0, lambda: (
+                self.status_label.config(text="Reading first PDF..."),
+                self.progress.config(value=30)
+            ))
             merger.append(self.pdf1)
+
+            # ---- Stage 2: Second PDF (60%) ----
+            self.root.after(0, lambda: (
+                self.status_label.config(text="Reading second PDF..."),
+                self.progress.config(value=60)
+            ))
             merger.append(self.pdf2)
+
+            # ---- Stage 3: Writing output (90%) ----
+            self.root.after(0, lambda: (
+                self.status_label.config(text="Writing output file..."),
+                self.progress.config(value=90)
+            ))
             merger.write(output_path)
             merger.close()
 
             logging.info("Merge completed successfully.")
+
+            # ---- Stage 4: Done (100%) ----
             self.root.after(0, self.merge_success)
 
         except Exception:
@@ -184,13 +210,16 @@ class PDFMergerApp:
     # ============== CALLBACKS ==============
 
     def merge_success(self):
+        self.progress['value'] = 100
+        # self.progress.config(value=100)
         self.progress.stop()
         self.status_label.config(text="Merge completed")
         messagebox.showinfo("Success", "PDFs merged successfully!")
         self.root.destroy()
 
     def merge_failed(self):
-        self.progress.stop()
+        # self.progress.stop()
+        self.progress['value'] = 0
         self.status_label.config(text="Merge failed")
         messagebox.showerror(
             "Error",
