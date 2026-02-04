@@ -1,0 +1,15 @@
+command to make pyinstaller --onedir with version controlled:
+pyinstaller --onedir --windowed --version-file .\version_info-split.txt .\src\split_pdf.py
+pyinstaller --onedir --noconsole split_launcher.py
+
+
+pyinstaller --onedir --windowed --version-file .\version_info-merge.txt .\src\merge_app.py
+pyinstaller --onedir --noconsole merge_launcher.py
+
+
+
+
+
+before any implementation, let's discuss will this architecture you provided will multiple pdf or not? 
+I dont' think so it'll work, please search through internet and find out how does it should work, becuase as far as I know, changing in code ONLY will not solve this issue of launching multiple GUI instances.... 
+I don't think soo

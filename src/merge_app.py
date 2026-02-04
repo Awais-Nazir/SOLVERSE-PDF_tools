@@ -7,6 +7,10 @@ from tkinter import filedialog, messagebox, ttk
 import logging
 from datetime import datetime
 from version import VERSION
+from ipc_single_instance import (
+    send_files_to_existing_instance,
+    start_ipc_server
+)
 
 # ================= LOGGER =================
 
@@ -32,7 +36,12 @@ def setup_logger(app_name):
     logging.info(f"Application version: {VERSION}")
     logging.info("========== Application Started ==========")
     logging.info(f"Executable Path: {sys.executable}")
+    logging.info(f"Process ID: {os.getpid()}")
     return log_file
+
+
+def log_ipc(msg):
+    logging.info(f"[IPC] {msg}")
 
 
 LOG_FILE = setup_logger("merge_app")
@@ -61,6 +70,25 @@ class PDFMergerApp:
         # Auto-merge if launched from context menu with 2 PDFs
         if self.pdf1 and self.pdf2:
             self.root.after(300, self.start_merge)
+
+# ================= IPC =================
+    def add_files_from_ipc(self, files):
+        pdfs = [f for f in files if f.lower().endswith(".pdf")]
+
+        if not pdfs:
+            return
+
+        # Merge logic: append in order
+        if not self.pdf1:
+            self.pdf1 = pdfs[0]
+            if len(pdfs) > 1:
+                self.pdf2 = pdfs[1]
+        else:
+            # Replace second PDF if already exists
+            self.pdf2 = pdfs[0]
+
+        self.update_labels()
+
 
     # ============== UI ==============
 
@@ -229,12 +257,34 @@ class PDFMergerApp:
 
 
 # ================= MAIN =================
-
 def main():
-    initial_files = [arg for arg in sys.argv[1:] if arg.lower().endswith(".pdf")][:2]
-    if len(initial_files) == 2:
-        logging.info("Auto mode detected (context menu)")
+    logging.info("Entered main()")
 
+    # Extract PDF args
+    initial_files = [
+        arg for arg in sys.argv[1:]
+        if arg.lower().endswith(".pdf")
+    ]
+
+    logging.info(f"Command-line PDF arguments: {initial_files}")
+
+    # ----- IPC Forwarding Attempt -----
+    if initial_files:
+        logging.info("Attempting IPC forwarding to existing instance")
+
+        forwarded = send_files_to_existing_instance(initial_files)
+
+        if forwarded:
+            log_ipc("Files forwarded successfully — exiting this instance")
+            sys.exit(0)
+        else:
+            log_ipc("No existing IPC server detected — this instance becomes primary")
+
+    else:
+        logging.info("No PDF arguments provided at startup")
+
+    # ----- GUI Startup -----
+    logging.info("Initializing Tkinter root window")
     root = tk.Tk()
 
     def safe_exit(event=None):
@@ -244,8 +294,23 @@ def main():
     root.bind("<Escape>", safe_exit)
     root.protocol("WM_DELETE_WINDOW", safe_exit)
 
-    PDFMergerApp(root, initial_files)
+    logging.info("Creating PDFMergerApp instance")
+    app = PDFMergerApp(root, initial_files)
+
+    # ----- IPC Server Startup -----
+    logging.info("Starting IPC server for primary instance")
+
+    start_ipc_server(
+        lambda files: (
+            log_ipc(f"Dispatching IPC files to GUI: {files}"),
+            root.after(0, app.add_files_from_ipc, files)
+        )
+    )
+
+    logging.info("Entering Tkinter mainloop")
     root.mainloop()
+
+    logging.info("Exited Tkinter mainloop — application shutdown")
 
 
 if __name__ == "__main__":
