@@ -1,16 +1,50 @@
 import sys
 import os
+import json
 import threading
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-
 import logging
 from datetime import datetime
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
 from version import VERSION
-from ipc_single_instance import (
-    send_files_to_existing_instance,
-    start_ipc_server
+
+# ================= QUEUE =================
+
+QUEUE_DIR = os.path.join(
+    os.getenv("LOCALAPPDATA", os.getcwd()),
+    "PDFTools",
+    "ipc"
 )
+
+QUEUE_FILE = os.path.join(QUEUE_DIR, "merge_queue.json")
+QUEUE_LOCK_FILE = os.path.join(QUEUE_DIR, "merge_queue.lock")
+MERGE_APP_FLAG = os.path.join(QUEUE_DIR, "merge_app_started.flag")
+
+
+def read_queue_files():
+    if not os.path.exists(QUEUE_FILE):
+        return []
+    try:
+        with open(QUEUE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("files", [])
+    except Exception:
+        logging.exception("Failed to read queue file")
+        return []
+
+
+def clear_queue():
+    # logging.info("Clearing merge queue demo-version")
+    # pass
+    # from merge_launcher import release_lock
+    try:
+        if os.path.exists(QUEUE_FILE):
+            os.remove(QUEUE_FILE)
+            os.remove(MERGE_APP_FLAG)
+            os.remove(QUEUE_LOCK_FILE)
+            logging.info("Merge queue cleared")
+    except Exception:
+        logging.exception("Failed to clear queue")
+
 
 # ================= LOGGER =================
 
@@ -34,283 +68,151 @@ def setup_logger(app_name):
     )
 
     logging.info(f"Application version: {VERSION}")
-    logging.info("========== Application Started ==========")
-    logging.info(f"Executable Path: {sys.executable}")
-    logging.info(f"Process ID: {os.getpid()}")
     return log_file
-
-
-def log_ipc(msg):
-    logging.info(f"[IPC] {msg}")
 
 
 LOG_FILE = setup_logger("merge_app")
 
-# ================= APP =================
+# ================= GUI =================
 
 class PDFMergerApp:
     def __init__(self, root, initial_files=None):
         self.root = root
         self.root.title(f"Merge PDFs v{VERSION}")
-        self.root.geometry("520x340")
+        self.root.geometry("520x420")
         self.root.resizable(False, False)
 
-        self.pdf1 = None
-        self.pdf2 = None
-
-        if initial_files:
-            if len(initial_files) >= 1:
-                self.pdf1 = initial_files[0]
-            if len(initial_files) >= 2:
-                self.pdf2 = initial_files[1]
+        self.pdfs = list(initial_files or [])
 
         self.create_ui()
-        self.update_labels()
+        self.refresh_listbox()
 
-        # Auto-merge if launched from context menu with 2 PDFs
-        if self.pdf1 and self.pdf2:
-            self.root.after(300, self.start_merge)
-
-# ================= IPC =================
-    def add_files_from_ipc(self, files):
-        pdfs = [f for f in files if f.lower().endswith(".pdf")]
-
-        if not pdfs:
-            return
-
-        # Merge logic: append in order
-        if not self.pdf1:
-            self.pdf1 = pdfs[0]
-            if len(pdfs) > 1:
-                self.pdf2 = pdfs[1]
-        else:
-            # Replace second PDF if already exists
-            self.pdf2 = pdfs[0]
-
-        self.update_labels()
-
-
-    # ============== UI ==============
+    # ---------- UI ----------
 
     def create_ui(self):
-        frame = tk.Frame(self.root, padx=20, pady=20)
+        frame = tk.Frame(self.root, padx=15, pady=15)
         frame.pack(fill="both", expand=True)
 
-        tk.Label(frame, text="First PDF:").grid(row=0, column=0, sticky="w")
-        self.label_pdf1 = tk.Label(frame, text="Not selected", width=40, anchor="w")
-        self.label_pdf1.grid(row=0, column=1)
+        tk.Label(frame, text="PDF Files (merge order):").pack(anchor="w")
 
-        tk.Button(frame, text="Select First PDF", command=self.select_pdf1)\
-            .grid(row=1, column=1, sticky="w", pady=5)
+        self.listbox = tk.Listbox(frame, width=60, height=10)
+        self.listbox.pack(pady=5)
 
-        tk.Label(frame, text="Second PDF:").grid(row=2, column=0, sticky="w")
-        self.label_pdf2 = tk.Label(frame, text="Not selected", width=40, anchor="w")
-        self.label_pdf2.grid(row=2, column=1)
+        btn_frame = tk.Frame(frame)
+        btn_frame.pack(pady=5)
 
-        tk.Button(frame, text="Select Second PDF", command=self.select_pdf2)\
-            .grid(row=3, column=1, sticky="w", pady=5)
+        tk.Button(btn_frame, text="Add PDFs", command=self.add_pdfs).grid(row=0, column=0, padx=5)
+        tk.Button(btn_frame, text="Remove", command=self.remove_selected).grid(row=0, column=1, padx=5)
+        tk.Button(btn_frame, text="Move Up", command=lambda: self.move(-1)).grid(row=0, column=2, padx=5)
+        tk.Button(btn_frame, text="Move Down", command=lambda: self.move(1)).grid(row=0, column=3, padx=5)
 
-        tk.Button(frame, text="Swap Order", command=self.swap_pdfs)\
-            .grid(row=4, column=1, sticky="w", pady=10)
+        self.merge_btn = tk.Button(frame, text="Merge PDFs", width=25, command=self.start_merge)
+        self.merge_btn.pack(pady=10)
 
-        self.merge_button = tk.Button(frame, text="Merge PDFs", width=20, command=self.start_merge)
-        self.merge_button.grid(row=5, column=1, pady=10)
+        self.status = ttk.Label(frame, text="Ready")
+        self.status.pack()
 
-        self.status_label = ttk.Label(frame, text="Ready")
-        self.status_label.grid(row=6, column=1, pady=5)
+        self.progress = ttk.Progressbar(frame, length=350, mode="determinate")
+        self.progress.pack(pady=5)
 
-        self.progress = ttk.Progressbar(
-            frame,
-            orient="horizontal",
-            length=300,
-            mode="determinate",
-            maximum=100
-        )
-        self.progress.grid(row=7, column=1, pady=5)
+    # ---------- List Handling ----------
 
-    # ============== HELPERS ==============
+    def refresh_listbox(self):
+        self.listbox.delete(0, tk.END)
+        for f in self.pdfs:
+            self.listbox.insert(tk.END, os.path.basename(f))
 
-    def update_labels(self):
-        self.label_pdf1.config(text=os.path.basename(self.pdf1) if self.pdf1 else "Not selected")
-        self.label_pdf2.config(text=os.path.basename(self.pdf2) if self.pdf2 else "Not selected")
+    def add_pdfs(self):
+        files = filedialog.askopenfilenames(filetypes=[("PDF Files", "*.pdf")])
+        for f in files:
+            if f not in self.pdfs:
+                self.pdfs.append(f)
+        self.refresh_listbox()
 
-    def select_pdf1(self):
-        path = filedialog.askopenfilename(filetypes=[("PDF Files", "*.pdf")])
-        if path:
-            self.pdf1 = path
-            self.update_labels()
+    def remove_selected(self):
+        for i in reversed(self.listbox.curselection()):
+            del self.pdfs[i]
+        self.refresh_listbox()
 
-    def select_pdf2(self):
-        path = filedialog.askopenfilename(filetypes=[("PDF Files", "*.pdf")])
-        if path:
-            self.pdf2 = path
-            self.update_labels()
+    def move(self, direction):
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        i = sel[0]
+        j = i + direction
+        if 0 <= j < len(self.pdfs):
+            self.pdfs[i], self.pdfs[j] = self.pdfs[j], self.pdfs[i]
+            self.refresh_listbox()
+            self.listbox.select_set(j)
 
-    def swap_pdfs(self):
-        self.pdf1, self.pdf2 = self.pdf2, self.pdf1
-        self.update_labels()
-
-    def get_unique_filename(self, path):
-        if not os.path.exists(path):
-            return path
-        base, ext = os.path.splitext(path)
-        counter = 1
-        while True:
-            new_path = f"{base}[{counter}]{ext}"
-            if not os.path.exists(new_path):
-                return new_path
-            counter += 1
-
-    # ============== MERGE LOGIC ==============
+    # ---------- Merge ----------
 
     def start_merge(self):
-        if not self.pdf1 or not self.pdf2:
-            messagebox.showerror("Error", "Please select both PDFs.")
+        if len(self.pdfs) < 2:
+            messagebox.showerror("Error", "Select at least two PDFs.")
             return
 
-        base_name = f"merged_{os.path.splitext(os.path.basename(self.pdf1))[0]}.pdf"
-        default_dir = os.path.dirname(self.pdf1)
-
         save_path = filedialog.asksaveasfilename(
-            initialdir=default_dir,
-            initialfile=base_name,
             defaultextension=".pdf",
-            filetypes=[("PDF Files", "*.pdf")]
+            filetypes=[("PDF Files", "*.pdf")],
+            initialfile="merged.pdf"
         )
 
         if not save_path:
             return
 
-        output_path = self.get_unique_filename(save_path)
-
-        self.merge_button.config(state="disabled")
-        self.status_label.config(text="Merging PDFs...")
+        self.merge_btn.config(state="disabled")
         self.progress.start(10)
+        self.status.config(text="Merging...")
 
         threading.Thread(
             target=self.merge_worker,
-            args=(output_path,),
+            args=(save_path,),
             daemon=True
         ).start()
 
-    def merge_worker(self, output_path):
+    def merge_worker(self, output):
         try:
-            # Lazy import (heavy)
             from PyPDF2 import PdfMerger
-
-            logging.info(
-                f"Merging:\n1: {self.pdf1}\n2: {self.pdf2}\nOutput: {output_path}"
-            )
-
             merger = PdfMerger()
 
-            # ---- Stage 1: First PDF (30%) ----
-            self.root.after(0, lambda: (
-                self.status_label.config(text="Reading first PDF..."),
-                self.progress.config(value=30)
-            ))
-            merger.append(self.pdf1)
+            for i, pdf in enumerate(self.pdfs):
+                merger.append(pdf)
+                pct = int((i + 1) / len(self.pdfs) * 90)
+                self.root.after(0, lambda v=pct: self.progress.config(value=v))
 
-            # ---- Stage 2: Second PDF (60%) ----
-            self.root.after(0, lambda: (
-                self.status_label.config(text="Reading second PDF..."),
-                self.progress.config(value=60)
-            ))
-            merger.append(self.pdf2)
-
-            # ---- Stage 3: Writing output (90%) ----
-            self.root.after(0, lambda: (
-                self.status_label.config(text="Writing output file..."),
-                self.progress.config(value=90)
-            ))
-            merger.write(output_path)
+            merger.write(output)
             merger.close()
 
-            logging.info("Merge completed successfully.")
-
-            # ---- Stage 4: Done (100%) ----
             self.root.after(0, self.merge_success)
 
         except Exception:
             logging.exception("Merge failed")
             self.root.after(0, self.merge_failed)
 
-    # ============== CALLBACKS ==============
-
     def merge_success(self):
-        self.progress['value'] = 100
-        # self.progress.config(value=100)
         self.progress.stop()
-        self.status_label.config(text="Merge completed")
+        self.progress.config(value=100)
         messagebox.showinfo("Success", "PDFs merged successfully!")
         self.root.destroy()
 
     def merge_failed(self):
-        # self.progress.stop()
-        self.progress['value'] = 0
-        self.status_label.config(text="Merge failed")
-        messagebox.showerror(
-            "Error",
-            f"Failed to merge PDFs.\n\nA log file has been created:\n{LOG_FILE}"
-        )
+        messagebox.showerror("Error", f"Merge failed.\n\nLog:\n{LOG_FILE}")
         self.root.destroy()
 
 
 # ================= MAIN =================
+
 def main():
-    logging.info("Entered main()")
+    cli_files = [a for a in sys.argv[1:] if a.lower().endswith(".pdf")]
+    queue_files = read_queue_files()
 
-    # Extract PDF args
-    initial_files = [
-        arg for arg in sys.argv[1:]
-        if arg.lower().endswith(".pdf")
-    ]
+    initial_files = list(dict.fromkeys(queue_files + cli_files))
+    clear_queue()
 
-    logging.info(f"Command-line PDF arguments: {initial_files}")
-
-    # ----- IPC Forwarding Attempt -----
-    if initial_files:
-        logging.info("Attempting IPC forwarding to existing instance")
-
-        forwarded = send_files_to_existing_instance(initial_files)
-
-        if forwarded:
-            log_ipc("Files forwarded successfully — exiting this instance")
-            sys.exit(0)
-        else:
-            log_ipc("No existing IPC server detected — this instance becomes primary")
-
-    else:
-        logging.info("No PDF arguments provided at startup")
-
-    # ----- GUI Startup -----
-    logging.info("Initializing Tkinter root window")
     root = tk.Tk()
-
-    def safe_exit(event=None):
-        logging.info("Application closed by user")
-        root.destroy()
-
-    root.bind("<Escape>", safe_exit)
-    root.protocol("WM_DELETE_WINDOW", safe_exit)
-
-    logging.info("Creating PDFMergerApp instance")
-    app = PDFMergerApp(root, initial_files)
-
-    # ----- IPC Server Startup -----
-    logging.info("Starting IPC server for primary instance")
-
-    start_ipc_server(
-        lambda files: (
-            log_ipc(f"Dispatching IPC files to GUI: {files}"),
-            root.after(0, app.add_files_from_ipc, files)
-        )
-    )
-
-    logging.info("Entering Tkinter mainloop")
+    PDFMergerApp(root, initial_files)
     root.mainloop()
-
-    logging.info("Exited Tkinter mainloop — application shutdown")
 
 
 if __name__ == "__main__":
