@@ -18,8 +18,15 @@ def configure_windows_dpi_awareness(platform=sys.platform, ctypes_module=ctypes)
     if windll is None:
         return False
 
-    user32 = getattr(windll, "user32", None)
-    shcore = getattr(windll, "shcore", None)
+    try:
+        user32 = getattr(windll, "user32", None)
+    except OSError:
+        user32 = None
+
+    try:
+        shcore = getattr(windll, "shcore", None)
+    except OSError:
+        shcore = None
 
     if user32 is not None:
         set_dpi_context = getattr(user32, "SetProcessDpiAwarenessContext", None)
