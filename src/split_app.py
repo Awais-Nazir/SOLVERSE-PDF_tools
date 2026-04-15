@@ -6,6 +6,7 @@ from tkinter import filedialog, messagebox, ttk
 import logging
 from datetime import datetime
 from version import VERSION
+from windows_dpi import create_root_window
 
 
 # ================= LOGGER =================
@@ -216,7 +217,7 @@ def main():
             initial_file = arg
             break
 
-    root = tk.Tk()
+    root = create_root_window()
 
     def safe_exit(event=None):
         logging.info("Application closed by user")
