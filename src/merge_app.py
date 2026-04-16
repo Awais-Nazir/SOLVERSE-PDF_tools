@@ -7,6 +7,7 @@ from tkinter import filedialog, messagebox, ttk
 import logging
 from datetime import datetime
 from version import VERSION
+from windows_dpi import create_root_window
 
 # ================= LOGGER =================
 
@@ -235,7 +236,7 @@ def main():
     if len(initial_files) == 2:
         logging.info("Auto mode detected (context menu)")
 
-    root = tk.Tk()
+    root = create_root_window()
 
     def safe_exit(event=None):
         logging.info("Application closed by user")
