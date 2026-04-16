@@ -20,3 +20,11 @@
 - PDF merge via context menu
 - PDF split via context menu
 - Windows installer with auto cleanup
+
+## [v1.2.0] - 2026-04-16
+
+### Fixed
+- Fixed blurry UI on Windows HiDPI displays (Thanks @YinkaiYu!)
+
+### Contributors
+- @YinkaiYu - HiDPI display fix
