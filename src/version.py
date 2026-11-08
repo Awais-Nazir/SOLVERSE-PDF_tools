@@ -1,3 +1,3 @@
 APP_NAME = "PDF Tools"
 VERSION = "2.0.0"
-BUILD = "development"
+BUILD = "stable"

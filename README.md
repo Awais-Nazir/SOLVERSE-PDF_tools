@@ -8,7 +8,7 @@ Built using **Python, Tkinter, PyInstaller, and Inno Setup**.
 
 ## ✨ Features
 
-- Merge two PDF files via right-click
+- Merge two to six PDFs in one window and drag the rows to set their order
 - Split PDF into multiple parts
 - Native Windows File Explorer integration
 - Simple and clean GUI
@@ -19,9 +19,8 @@ Built using **Python, Tkinter, PyInstaller, and Inno Setup**.
 
 ## 📦 Installation
 
-1. Download the latest installer from the **Releases** page:
-   👉 [PDF Tools v1.2.0](https://github.com/Awais-Nazir/SOLVERSE-PDF_tools/releases/tag/v1.2.0)
-2. Run `PDF_Tools_Setup_v1.2.0.exe`
+1. Download the Windows installer from [GitHub Releases](https://github.com/Awais-Nazir/SOLVERSE-PDF_tools/releases/latest).
+2. Run `PDF_Tools_Setup_v2.0.0.exe`
 3. Follow the setup wizard
 
 ---
@@ -29,9 +28,9 @@ Built using **Python, Tkinter, PyInstaller, and Inno Setup**.
 ## 🖱 How to Use
 
 ### Merge PDFs
-- Select **one or two PDF files**
-- Right-click → **Merge PDFs**
-- Choose output location
+- Select **two to six PDF files** in File Explorer and right-click → **Merge PDFs**. On Windows 11, the command may appear under **Show more options**.
+- All selected files open in one window. Drag rows to change their order, or add files up to the six-file limit.
+- Click **Merge PDFs** and choose where to save the result.
 
 ### Split PDF
 - Right-click a PDF

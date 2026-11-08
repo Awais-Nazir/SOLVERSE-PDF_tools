@@ -1,5 +1,6 @@
 # build.py
 import subprocess
+import sys
 import shutil
 import os
 from pathlib import Path
@@ -35,6 +36,7 @@ BUILD_CONFIGS = [
 INSTALLER_DIR = Path("./installer-exe")
 DIST_DIR = Path("./dist")
 BUILD_DIR = Path("./build")
+APP_ICON = Path(__file__).resolve().parent / "inno-compiler-files" / "installer_icon.ico"
 
 
 def clean_pyinstaller_cache():
@@ -78,9 +80,12 @@ def build_exe(config):
     print(f"🔨 Building {config['name']}...")
 
     cmd = [
-        "pyinstaller",
+        sys.executable, "-m", "PyInstaller",
         "--onedir",
         "--windowed",
+        "--icon", str(APP_ICON),
+        *(["--add-data", f"{APP_ICON}{os.pathsep}."] if config["name"].endswith("_app") else []),
+        *(["--contents-directory", "_launcher_runtime"] if config["name"] == "merge_launcher" else []),
         "--version-file",
         config["version_file"],
         config["script"],
@@ -116,10 +121,8 @@ def copy_contents_to_installer_dir(config):
         dest_path = dest / item.name
 
         if item.is_dir():
-            # For directories (like _internal), copy tree and overwrite
-            if dest_path.exists():
-                shutil.rmtree(dest_path)
-            shutil.copytree(item, dest_path)
+            # The app and launcher share this directory; keep app-only Tk files.
+            shutil.copytree(item, dest_path, dirs_exist_ok=True)
             print(f"   📁 Copied directory: {item.name}")
         else:
             # For files (like .exe), copy and overwrite

@@ -1,6 +1,7 @@
 import ctypes
 import sys
 import tkinter as tk
+from pathlib import Path
 
 
 PER_MONITOR_AWARE_V2 = -4
@@ -54,4 +55,15 @@ def create_root_window(tk_module=tk, platform=sys.platform, ctypes_module=ctypes
         platform=platform,
         ctypes_module=ctypes_module,
     )
-    return tk_module.Tk()
+    if platform == "win32":
+        ctypes_module.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Solverse.PDFTools")
+
+    root = tk_module.Tk()
+    if platform == "win32":
+        if getattr(sys, "frozen", False):
+            icon = Path(sys._MEIPASS) / "installer_icon.ico"
+        else:
+            icon = Path(__file__).resolve().parents[1] / "inno-compiler-files" / "installer_icon.ico"
+        root.iconbitmap(default=str(icon))
+        root.iconbitmap(str(icon))
+    return root

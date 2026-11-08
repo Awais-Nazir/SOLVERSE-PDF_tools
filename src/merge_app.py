@@ -6,11 +6,11 @@ from tkinter import filedialog, messagebox, ttk
 import logging
 from datetime import datetime
 from version import VERSION
+from merge_selection import MAX_PDFS
 from windows_dpi import create_root_window
 
 # ================= CONSTANTS =================
 
-MAX_PDFS = 6
 MIN_PDFS = 2
 
 # ================= LOGGER =================
@@ -66,16 +66,6 @@ class PDFMergerApp:
 
         self._build_window()
         self._build_ui()
-
-        # Auto-merge when all slots came from context menu and none are empty
-        auto_mode = (
-            initial_files is not None
-            and len(initial_files) >= MIN_PDFS
-            and all(p is not None for p in self.pdfs)
-        )
-        if auto_mode:
-            logging.info("Auto-merge mode: all slots filled from argv.")
-            self.root.after(300, self.start_merge)
 
     # ============== WINDOW ==============
 
@@ -465,9 +455,7 @@ class PDFMergerApp:
 
 
 def main():
-    initial_files = [arg for arg in sys.argv[1:] if arg.lower().endswith(".pdf")][
-        :MAX_PDFS
-    ]
+    initial_files = [arg for arg in sys.argv[1:] if arg.lower().endswith(".pdf")]
 
     if initial_files:
         logging.info(f"Launched with {len(initial_files)} PDF(s) via argv.")
@@ -475,6 +463,11 @@ def main():
         logging.info("Launched manually (no argv PDFs).")
 
     root = create_root_window()
+    if len(initial_files) > MAX_PDFS:
+        root.withdraw()
+        messagebox.showerror("Merge PDFs", f"Select at most {MAX_PDFS} PDFs.", parent=root)
+        root.destroy()
+        return
 
     def safe_exit(event=None):
         logging.info("Application closed by user")
