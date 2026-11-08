@@ -4,6 +4,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+.eggs/
 
 # =========================
 # Virtual Environments
@@ -24,24 +26,23 @@ venv.bak/
 *.sublime-workspace
 
 # =========================
-# OS files
+# Operating System
 # =========================
 .DS_Store
 Thumbs.db
 
 # =========================
-# Logs & Local files
+# Logs
 # =========================
 *.log
 *.sqlite3
 
 # =========================
-# Python build files
+# PyInstaller Build Artifacts
 # =========================
 build/
 dist/
-*.egg-info/
-.eggs/
+*.spec
 
 # =========================
 # Testing & Coverage
@@ -53,37 +54,35 @@ htmlcov/
 .nox/
 
 # =========================
-# Jupyter Notebooks
-# =========================
-.ipynb_checkpoints/
-
-# =========================
 # Environment Variables
 # =========================
 .env
 .env.*
 
 # =========================
-# Cache & Temporary files
+# Local Output / Executables
 # =========================
-.cache/
-.mypy_cache/
-.pyre/
+*.exe
+installer-exe/
+Installer-Files/
+Production/
+
+# =========================
+# Local Staging / Archives
+# =========================
+SOLVERSE/
 SOLVERSE.rar
-SOLVERSE/*
-SOLVERSE/ 
-Assets/*
+Extra/
+Test-Files/
+Assets/
+website/
+commands.md
+
+# =========================
+# Assets & Artwork Exceptions
+# =========================
+# General ignore for image dumps, but preserve installer assets
 *.bmp
 *.ico
-
-*.exe
-*.spec
-/Extra/*
-Extra/
-Production/*
-
-/Installer-Files/*
-Installer-Files/
-/Test-Files/*
-Test-Files/
-commands.md
+!inno-compiler-files/*.ico
+!inno-compiler-files/*.bmp

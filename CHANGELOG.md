@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.0
+
+- Fixed [issue #2](https://github.com/Awais-Nazir/SOLVERSE-PDF_tools/issues/2): selecting two to six PDFs in File Explorer and choosing **Merge PDFs** opens one window containing the entire selection.
+- Review and reorder files before merging. Selections above six show a limit message.
+- Packaged the Tcl/Tk runtime with both apps and applied the PDF Tools icon to their windows and executables.
+
 ## v1.1.0
 - Major startup performance improvements using PyInstaller `--onedir`
 - Added tiny launcher executables for instant context-menu response
